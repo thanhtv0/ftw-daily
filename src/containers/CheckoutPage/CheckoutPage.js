@@ -8,7 +8,7 @@ import classNames from 'classnames';
 import config from '../../config';
 import routeConfiguration from '../../routeConfiguration';
 import { pathByRouteName, findRouteByRouteName } from '../../util/routes';
-import { propTypes, LINE_ITEM_NIGHT, LINE_ITEM_DAY, DATE_TYPE_DATE } from '../../util/types';
+import { propTypes, LINE_ITEM_NIGHT, LINE_ITEM_DAY, DATE_TYPE_DATE, LINE_ITEM_SALE_OF_ON_MONDAY } from '../../util/types';
 import {
   ensureListing,
   ensureCurrentUser,
@@ -18,7 +18,7 @@ import {
   ensureStripeCustomer,
   ensurePaymentMethodCard,
 } from '../../util/data';
-import { dateFromLocalToAPI, minutesBetween } from '../../util/dates';
+import { dateFromLocalToAPI, minutesBetween, nightsBetween, daysBetween } from '../../util/dates';
 import { createSlug } from '../../util/urlHelpers';
 import {
   isTransactionInitiateAmountTooLowError,
@@ -30,7 +30,14 @@ import {
   transactionInitiateOrderStripeErrors,
 } from '../../util/errors';
 import { formatMoney } from '../../util/currency';
-import { TRANSITION_ENQUIRE, txIsPaymentPending, txIsPaymentExpired } from '../../util/transaction';
+import { TRANSITION_ENQUIRE, txIsPaymentPending, txIsPaymentExpired, 
+  TRANSITION_REQUEST_PAYMENT_10,
+  TRANSITION_REQUEST_PAYMENT_15,
+  TRANSITION_REQUEST_PAYMENT_20, 
+  TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_10,
+  TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_15,
+  TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_20,
+} from '../../util/transaction';
 import {
   AvatarMedium,
   BookingBreakdown,
@@ -55,6 +62,12 @@ import {
 } from './CheckoutPage.duck';
 import { storeData, storedData, clearData } from './CheckoutPageSessionHelpers';
 import css from './CheckoutPage.css';
+import {types as sdkTypes} from "../../util/sdkLoader";
+import moment from "moment"
+import { unitDivisor, convertMoneyToNumber, convertUnitToSubUnit } from '../../util/currency';
+import Decimal from 'decimal.js'
+
+const { Money } = sdkTypes;
 
 const STORAGE_KEY = 'CheckoutPage';
 
@@ -92,6 +105,115 @@ const checkIsPaymentExpired = existingTransaction => {
     ? minutesBetween(existingTransaction.attributes.lastTransitionedAt, new Date()) >= 15
     : false;
 };
+
+//Check has monday in booking
+const hasMonday = (bookingStart, bookingEnd) => {
+  let start = moment(bookingStart);
+  let end = moment(bookingEnd).valueOf();
+  while(start.valueOf() <= end ) {
+    if(start.get("day") === 1) {
+      return true;
+    } //is monday
+    start.add(1, "days");
+  }
+
+  return false;
+}
+
+/** Count price after sale
+  * @returns a numeric total price after sale
+*/
+const estimatedTotalPriceAfterSale = (unitPrice, unitCount, isSale) => {
+  const numericPrice = convertMoneyToNumber(unitPrice);
+  const numericTotalPrice = new Decimal(numericPrice).times(unitCount).toNumber();
+  let numericTotalPriceAfterSale = numericTotalPrice;
+
+  if(isSale) {
+    numericTotalPriceAfterSale = numericTotalPrice <= config.saleOfPrice ? 1 : numericTotalPrice - config.saleOfPrice;
+  }
+
+  return { numericTotalPrice, numericTotalPriceAfterSale };
+};
+
+/**
+ * Constructs a request params object that can be used when creating bookings
+ * using custom pricing.
+ * @param {} params An object that contains bookingStart, bookingEnd and listing
+ * @return a params object for custom pricing bookings
+ */
+
+const customPricingParams = (params) => {
+  const { bookingStart, bookingEnd, listing, ...rest } = params;
+  const { amount, currency } = listing.attributes.price;
+  const { saleOfOnMonday } = listing.attributes.publicData;
+
+  const unitType = config.bookingUnitType;
+  const isNightly = unitType === LINE_ITEM_NIGHT;
+
+  const _quantity = isNightly
+    ? nightsBetween(bookingStart, bookingEnd)
+    : daysBetween(bookingStart, bookingEnd);
+
+  const quantity = _quantity === 0 ? 1 : _quantity;
+
+  const isSale = saleOfOnMonday && hasMonday(bookingStart, bookingEnd);
+
+  const { numericTotalPrice, numericTotalPriceAfterSale} = estimatedTotalPriceAfterSale(listing.attributes.price, quantity, isSale);
+
+  let saleOfPrice = 0;
+  
+  // Gia lon hon 1
+  // Neu sau sale gia tien = 1 lay gia goc -1
+  // Nguoc lai sale 25$
+  if(numericTotalPrice > 1) {
+    if(numericTotalPriceAfterSale === 1) {
+      saleOfPrice = numericTotalPrice - 1;
+    }
+    else {
+      saleOfPrice = config.saleOfPrice;
+    }
+  }
+
+  const saleOfItem = {
+    code: LINE_ITEM_SALE_OF_ON_MONDAY,
+    unitPrice: new Money(
+      convertUnitToSubUnit(saleOfPrice, unitDivisor(currency)),
+      currency
+    ),
+    percentage: -100,
+  };
+
+  const lineItemSaleOf = isSale ? [saleOfItem] : [];
+
+  let transition = {
+    request: TRANSITION_REQUEST_PAYMENT_10, //request payment
+    request_after: TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_10, //request payment after enquiry
+  };
+
+  if(numericTotalPriceAfterSale > 100 && numericTotalPriceAfterSale < 200) {
+    transition.request = TRANSITION_REQUEST_PAYMENT_15;
+    transition.request_after = TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_15;
+  } else if(numericTotalPriceAfterSale >= 200) {
+    transition.request = TRANSITION_REQUEST_PAYMENT_20;
+    transition.request_after = TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_20;
+  }
+
+  return {
+    listingId: listing.id,
+    bookingStart,
+    bookingEnd,
+    transition,
+    lineItems: [
+      {
+        code: unitType,
+        unitPrice: new Money(amount, currency),
+        quantity,
+      },
+      ...lineItemSaleOf,
+    ],
+    ...rest,
+  };
+}
 
 export class CheckoutPageComponent extends Component {
   constructor(props) {
@@ -142,7 +264,6 @@ export class CheckoutPageComponent extends Component {
       fetchStripeCustomer,
       history,
     } = this.props;
-
     // Fetch currentUser with stripeCustomer entity
     // Note: since there's need for data loading in "componentWillMount" function,
     //       this is added here instead of loadData static function.
@@ -180,9 +301,8 @@ export class CheckoutPageComponent extends Component {
       !isBookingCreated;
 
     if (shouldFetchSpeculatedTransaction) {
-      const listingId = pageData.listing.id;
+      const listing = pageData.listing;
       const { bookingStart, bookingEnd } = pageData.bookingDates;
-
       // Convert picked date to date that will be converted on the API as
       // a noon of correct year-month-date combo in UTC
       const bookingStartForAPI = dateFromLocalToAPI(bookingStart);
@@ -191,13 +311,13 @@ export class CheckoutPageComponent extends Component {
       // Fetch speculated transaction for showing price in booking breakdown
       // NOTE: if unit type is line-item/units, quantity needs to be added.
       // The way to pass it to checkout page is through pageData.bookingData
-      fetchSpeculatedTransaction({
-        listingId,
+      const params = customPricingParams({
+        listing,
         bookingStart: bookingStartForAPI,
         bookingEnd: bookingEndForAPI,
       });
+      fetchSpeculatedTransaction(params);
     }
-
     this.setState({ pageData: pageData || {}, dataLoaded: true });
   }
 
@@ -309,9 +429,10 @@ export class CheckoutPageComponent extends Component {
 
     // Step 3: complete order by confirming payment to Marketplace API
     // Parameter should contain { paymentIntent, transactionId } returned in step 2
+    const { autoAcceptBooking } = pageData.listing.attributes.publicData;
     const fnConfirmPayment = fnParams => {
       createdPaymentIntent = fnParams.paymentIntent;
-      return onConfirmPayment(fnParams);
+      return onConfirmPayment( {...fnParams, autoAcceptBooking});
     };
 
     // Step 4: send initial message
@@ -353,7 +474,7 @@ export class CheckoutPageComponent extends Component {
       fnConfirmPayment,
       fnSendMessage,
       fnSavePaymentMethod
-    );
+    )
 
     // Create order aka transaction
     // NOTE: if unit type is line-item/units, quantity needs to be added.
@@ -370,12 +491,12 @@ export class CheckoutPageComponent extends Component {
         ? { setupPaymentMethodForSaving: true }
         : {};
 
-    const orderParams = {
-      listingId: pageData.listing.id,
+    const orderParams = customPricingParams({
+      listing: pageData.listing,
       bookingStart: tx.booking.attributes.start,
       bookingEnd: tx.booking.attributes.end,
       ...optionalPaymentParams,
-    };
+    });
 
     return handlePaymentIntentCreation(orderParams);
   }
@@ -589,7 +710,6 @@ export class CheckoutPageComponent extends Component {
           dateType={DATE_TYPE_DATE}
         />
       ) : null;
-
     const isPaymentExpired = checkIsPaymentExpired(existingTransaction);
     const hasDefaultPaymentMethod = !!(
       stripeCustomerFetched &&
@@ -937,7 +1057,7 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => ({
   dispatch,
-  fetchSpeculatedTransaction: params => dispatch(speculateTransaction(params)),
+  fetchSpeculatedTransaction: ( params ) => dispatch(speculateTransaction(params)),
   fetchStripeCustomer: () => dispatch(stripeCustomer()),
   onInitiateOrder: (params, transactionId) => dispatch(initiateOrder(params, transactionId)),
   onRetrievePaymentIntent: params => dispatch(retrievePaymentIntent(params)),

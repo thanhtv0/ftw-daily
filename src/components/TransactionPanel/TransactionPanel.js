@@ -3,7 +3,9 @@ import { array, arrayOf, bool, func, number, string } from 'prop-types';
 import { FormattedMessage, injectIntl, intlShape } from '../../util/reactIntl';
 import classNames from 'classnames';
 import {
-  TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY,
+  TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_10,
+  TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_20,
+  TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_15,
   txIsAccepted,
   txIsCanceled,
   txIsDeclined,
@@ -39,6 +41,7 @@ import DetailCardHeadingsMaybe from './DetailCardHeadingsMaybe';
 import DetailCardImage from './DetailCardImage';
 import FeedSection from './FeedSection';
 import SaleActionButtonsMaybe from './SaleActionButtonsMaybe';
+import InvalidPriceMessageMaybe from "./InvalidPriceMessageMaybe";
 import PanelHeading, {
   HEADING_ENQUIRED,
   HEADING_PAYMENT_PENDING,
@@ -208,6 +211,7 @@ export class TransactionPanelComponent extends Component {
     const isProviderLoaded = !!currentProvider.id;
     const isProviderBanned = isProviderLoaded && currentProvider.attributes.banned;
     const isProviderDeleted = isProviderLoaded && currentProvider.attributes.deleted;
+    const { publicData, geolocation } = currentListing.attributes;
 
     const stateDataFn = tx => {
       if (txIsEnquired(tx)) {
@@ -217,7 +221,11 @@ export class TransactionPanelComponent extends Component {
             })
           : [];
         const hasCorrectNextTransition =
-          transitions.length > 0 && transitions.includes(TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY);
+          transitions.length > 0 && (
+            transitions.includes(TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_10)
+            || transitions.includes(TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_15)
+            || transitions.includes(TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_20)
+          );
         return {
           headingState: HEADING_ENQUIRED,
           showBookingPanel: isCustomer && !isProviderBanned && hasCorrectNextTransition,
@@ -277,7 +285,6 @@ export class TransactionPanelComponent extends Component {
       otherUserDisplayNameString,
     } = displayNames(currentUser, currentProvider, currentCustomer, intl);
 
-    const { publicData, geolocation } = currentListing.attributes;
     const location = publicData && publicData.location ? publicData.location : {};
     const listingTitle = currentListing.attributes.deleted
       ? deletedListingTitle
@@ -370,6 +377,12 @@ export class TransactionPanelComponent extends Component {
                 showAddress={stateData.showAddress}
               />
               <BreakdownMaybe transaction={currentTransaction} transactionRole={transactionRole} />
+              <InvalidPriceMessageMaybe
+                transaction={currentTransaction}
+                listing={currentListing}
+                transactionRole={transactionRole}
+                intl={intl}
+              />
             </div>
 
             {savePaymentMethodFailed ? (
@@ -444,6 +457,7 @@ export class TransactionPanelComponent extends Component {
                   onManageDisableScrolling={onManageDisableScrolling}
                   timeSlots={timeSlots}
                   fetchTimeSlotsError={fetchTimeSlotsError}
+                  publicData={publicData}
                 />
               ) : null}
               <BreakdownMaybe

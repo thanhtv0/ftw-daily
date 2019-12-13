@@ -9,7 +9,7 @@ import { required, bookingDatesRequired, composeValidators } from '../../util/va
 import { START_DATE, END_DATE } from '../../util/dates';
 import { propTypes } from '../../util/types';
 import config from '../../config';
-import { Form, PrimaryButton, FieldDateRangeInput } from '../../components';
+import { Form, PrimaryButton, FieldDateRangeInput, FieldTimeRangeInput } from '../../components';
 import EstimatedBreakdownMaybe from './EstimatedBreakdownMaybe';
 
 import css from './BookingDatesForm.css';
@@ -83,14 +83,17 @@ export class BookingDatesFormComponent extends Component {
             handleSubmit,
             intl,
             isOwnListing,
+            form,
             submitButtonWrapperClassName,
             unitPrice,
             unitType,
             values,
             timeSlots,
             fetchTimeSlotsError,
+            publicData,
           } = fieldRenderProps;
           const { startDate, endDate } = values && values.bookingDates ? values.bookingDates : {};
+          const { startTime, endTime } = values && values.bookingTimes ? values.bookingTimes : {};
 
           const bookingStartLabel = intl.formatMessage({
             id: 'BookingDatesForm.bookingStartTitle',
@@ -113,16 +116,19 @@ export class BookingDatesFormComponent extends Component {
           // EstimatedBreakdownMaybe component to change the calculations
           // for customized payment processes.
           const bookingData =
-            startDate && endDate
+            startDate && endDate && startTime && endTime
               ? {
                   unitType,
                   unitPrice,
                   startDate,
                   endDate,
+                  startTime,
+                  endTime,
 
                   // NOTE: If unitType is `line-item/units`, a new picker
                   // for the quantity should be added to the form.
                   quantity: 1,
+                  saleOfOnMonday: publicData.saleOfOnMonday,
                 }
               : null;
           const bookingInfo = bookingData ? (
@@ -130,7 +136,7 @@ export class BookingDatesFormComponent extends Component {
               <h3 className={css.priceBreakdownTitle}>
                 <FormattedMessage id="BookingDatesForm.priceBreakdownTitle" />
               </h3>
-              <EstimatedBreakdownMaybe bookingData={bookingData} />
+              <EstimatedBreakdownMaybe bookingData={bookingData}/>
             </div>
           ) : null;
 
@@ -176,6 +182,15 @@ export class BookingDatesFormComponent extends Component {
                   required(requiredMessage),
                   bookingDatesRequired(startDateErrorMessage, endDateErrorMessage)
                 )}
+              />
+              <FieldTimeRangeInput 
+                className={css.bookingTimes}
+                name="bookingTimes"
+                startTime={startTime}
+                endTime={endTime}
+                startDate={startDate}
+                endDate={endDate}
+                form={form}
               />
               {bookingInfo}
               <p className={css.smallPrint}>

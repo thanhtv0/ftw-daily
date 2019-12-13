@@ -18,8 +18,6 @@ const EditListingPricingPanel = props => {
     className,
     rootClassName,
     listing,
-    disabled,
-    ready,
     onSubmit,
     onChange,
     submitButtonText,
@@ -30,7 +28,8 @@ const EditListingPricingPanel = props => {
 
   const classes = classNames(rootClassName || css.root, className);
   const currentListing = ensureOwnListing(listing);
-  const { price } = currentListing.attributes;
+  const { price,publicData } = currentListing.attributes;
+  const { saleOfOnMonday, autoAcceptBooking } = publicData;
 
   const isPublished = currentListing.id && currentListing.attributes.state !== LISTING_STATE_DRAFT;
   const panelTitle = isPublished ? (
@@ -46,12 +45,22 @@ const EditListingPricingPanel = props => {
   const form = priceCurrencyValid ? (
     <EditListingPricingForm
       className={css.form}
-      initialValues={{ price }}
-      onSubmit={onSubmit}
+      initialValues={{ price, saleOfOnMonday, autoAcceptBooking }}
+      onSubmit={(values) => {
+        const { price, saleOfOnMonday, autoAcceptBooking } = values;
+        const updateValues = {
+          price,
+          publicData: {
+            saleOfOnMonday,
+            autoAcceptBooking,
+          }
+        }
+
+        onSubmit(updateValues);
+      }
+      }
       onChange={onChange}
       saveActionMsg={submitButtonText}
-      disabled={disabled}
-      ready={ready}
       updated={panelUpdated}
       updateInProgress={updateInProgress}
       fetchErrors={errors}
@@ -85,8 +94,6 @@ EditListingPricingPanel.propTypes = {
   // We cannot use propTypes.listing since the listing might be a draft.
   listing: object,
 
-  disabled: bool.isRequired,
-  ready: bool.isRequired,
   onSubmit: func.isRequired,
   onChange: func.isRequired,
   submitButtonText: string.isRequired,

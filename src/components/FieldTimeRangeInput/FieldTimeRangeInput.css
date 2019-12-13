@@ -1,0 +1,28 @@
+.root {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 10px;
+    padding: 0px 25px;
+
+    @media (--viewportSmall) {
+        padding: 0;
+    }
+}
+
+.endTime {
+    margin-left: 20px;
+    width: 100%;
+}
+
+.startTime {
+    width: 100%;
+}
+
+.root select {
+    border-bottom: 3px solid orange !important;
+}
+
+.root option[value=""][disabled] {
+    color: gray;
+}
+

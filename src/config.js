@@ -32,7 +32,7 @@ const sortSearchByDistance = false;
 //
 // In a way, 'processAlias' defines which transaction process (or processes)
 // this particular web application is able to handle.
-const bookingProcessAlias = 'preauth-nightly-booking/release-1';
+const bookingProcessAlias = 'preauth-nightly-booking-custom/release-1';
 
 // The transaction line item code for the main unit type in bookings.
 //
@@ -179,6 +179,12 @@ const maps = {
   },
 };
 
+//timeRange
+const timeRange = 30;//minute
+
+//discount of on monday
+const saleOfPrice = 25;
+
 // NOTE: only expose configuration that should be visible in the
 // client side, don't add any server secrets in this file.
 const config = {
@@ -219,6 +225,8 @@ const config = {
   usingSSL,
   maps,
   custom,
+  timeRange,
+  saleOfPrice,
 };
 
 export default config;

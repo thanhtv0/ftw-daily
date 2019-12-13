@@ -53,15 +53,27 @@ class PriceFilterPlainComponent extends Component {
     const hasInitialValues = initialValues && hasValue(minPrice) && hasValue(maxPrice);
 
     const labelClass = hasInitialValues ? css.filterLabelSelected : css.filterLabel;
-    const labelText = hasInitialValues
+    const labelPrice = hasInitialValues
       ? intl.formatMessage(
-          { id: 'PriceFilter.labelSelectedPlain' },
-          {
-            minPrice: formatCurrencyMajorUnit(intl, currencyConfig.currency, minPrice),
-            maxPrice: formatCurrencyMajorUnit(intl, currencyConfig.currency, maxPrice),
-          }
-        )
+        { id: 'PriceFilter.labelSelectedPlain' },
+        {
+          minPrice: formatCurrencyMajorUnit(intl, currencyConfig.currency, minPrice),
+          maxPrice: formatCurrencyMajorUnit(intl, currencyConfig.currency, maxPrice),
+        }
+      )
       : intl.formatMessage({ id: 'PriceFilter.label' });
+
+    const labelNumOfPeople = hasInitialValues
+      ? intl.formatMessage(
+        { id: 'PriceFilter.labelSelectedNumOfPeople' },
+        {
+          minPrice: minPrice,
+          maxPrice: maxPrice,
+        }
+      )
+      : intl.formatMessage({ id: 'PriceFilter.labelNumOfPeople' });
+
+    const labelText = this.props.numOfPeopleLabel ? labelNumOfPeople : labelPrice;
 
     return (
       <div className={classes}>

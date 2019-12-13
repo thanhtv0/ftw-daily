@@ -41,6 +41,7 @@ export class SearchPageComponent extends Component {
     this.state = {
       isSearchMapOpenOnMobile: props.tab === 'map',
       isMobileModalOpen: false,
+      isShowMap: true,
     };
 
     this.searchMapListingsInProgress = false;
@@ -49,6 +50,7 @@ export class SearchPageComponent extends Component {
     this.onMapMoveEnd = debounce(this.onMapMoveEnd.bind(this), SEARCH_WITH_MAP_DEBOUNCE);
     this.onOpenMobileModal = this.onOpenMobileModal.bind(this);
     this.onCloseMobileModal = this.onCloseMobileModal.bind(this);
+    this.handleShowMapChange = this.handleShowMapChange.bind(this);
   }
 
   filters() {
@@ -58,6 +60,9 @@ export class SearchPageComponent extends Component {
       priceFilterConfig,
       dateRangeFilterConfig,
       keywordFilterConfig,
+      numberOfPeople,
+      numOfPeopleConfig,
+      subCategories,
     } = this.props;
 
     // Note: "category" and "amenities" filters are not actually filtering anything by default.
@@ -86,7 +91,25 @@ export class SearchPageComponent extends Component {
         paramName: 'keywords',
         config: keywordFilterConfig,
       },
+      numberOfPeopleFilter: {
+        paramName: "pub_capacity",
+        options: numberOfPeople,
+      },
+      numOfPeopleFilter: {
+        paramName: "pub_numberOfPeople",
+        config: numOfPeopleConfig,
+      },
+      subCategoriesFilter: {
+        paramName: "pub_subCategories",
+        options: subCategories,
+      }
     };
+  }
+
+  handleShowMapChange() {
+    this.setState({
+      isShowMap: !this.state.isShowMap,
+    })
   }
 
   // Callback to determine if new search is needed
@@ -179,12 +202,14 @@ export class SearchPageComponent extends Component {
     const isWindowDefined = typeof window !== 'undefined';
     const isMobileLayout = isWindowDefined && window.innerWidth < MODAL_BREAKPOINT;
     const shouldShowSearchMap =
-      !isMobileLayout || (isMobileLayout && this.state.isSearchMapOpenOnMobile);
-
+      (!isMobileLayout || (isMobileLayout && this.state.isSearchMapOpenOnMobile)) && this.state.isShowMap;
+    
     const onMapIconClick = () => {
       this.useLocationSearchBounds = true;
       this.setState({ isSearchMapOpenOnMobile: true });
     };
+
+    const shouldShowModal = this.state.isShowMap || isMobileLayout;
 
     const { address, bounds, origin } = searchInURL || {};
     const { title, description, schema } = createSearchResultSchema(listings, address, intl);
@@ -225,15 +250,20 @@ export class SearchPageComponent extends Component {
             pagination={pagination}
             searchParamsForPagination={parse(location.search)}
             showAsModalMaxWidth={MODAL_BREAKPOINT}
+            isShowMap={this.state.isShowMap}
+            handleShowMapChange={this.handleShowMapChange}
             primaryFilters={{
               categoryFilter: filters.categoryFilter,
               amenitiesFilter: filters.amenitiesFilter,
               priceFilter: filters.priceFilter,
               dateRangeFilter: filters.dateRangeFilter,
               keywordFilter: filters.keywordFilter,
+              numberOfPeopleFilter: filters.numberOfPeopleFilter,
+              numOfPeopleFilter: filters.numOfPeopleFilter,
+              subCategoriesFilter: filters.subCategoriesFilter,
             }}
           />
-          <ModalInMobile
+          {shouldShowModal ? <ModalInMobile
             className={css.mapPanel}
             id="SearchPage.map"
             isModalOpenOnMobile={this.state.isSearchMapOpenOnMobile}
@@ -259,7 +289,7 @@ export class SearchPageComponent extends Component {
                 />
               ) : null}
             </div>
-          </ModalInMobile>
+          </ModalInMobile> : null}
         </div>
       </Page>
     );
@@ -280,6 +310,9 @@ SearchPageComponent.defaultProps = {
   dateRangeFilterConfig: config.custom.dateRangeFilterConfig,
   keywordFilterConfig: config.custom.keywordFilterConfig,
   activeListingId: null,
+  numberOfPeople: config.custom.numberOfPeople,
+  numOfPeopleConfig: config.custom.numOfPeopleFilterConfig,
+  subCategories: config.custom.subCategories,
 };
 
 SearchPageComponent.propTypes = {
@@ -296,7 +329,13 @@ SearchPageComponent.propTypes = {
   tab: oneOf(['filters', 'listings', 'map']).isRequired,
   categories: array,
   amenities: array,
+  subCategories: array,
   priceFilterConfig: shape({
+    min: number.isRequired,
+    max: number.isRequired,
+    step: number.isRequired,
+  }),
+  numOfPeopleFilterConfig: shape({
     min: number.isRequired,
     max: number.isRequired,
     step: number.isRequired,
@@ -313,6 +352,7 @@ SearchPageComponent.propTypes = {
 
   // from injectIntl
   intl: intlShape.isRequired,
+  numberOfPeople: array,
 };
 
 const mapStateToProps = state => {

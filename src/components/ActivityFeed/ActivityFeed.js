@@ -27,6 +27,7 @@ import {
   txRoleIsCustomer,
   getUserTxRole,
   isRelevantPastTransition,
+  TRANSITION_ACCEPT_AUTO,
 } from '../../util/transaction';
 import { propTypes } from '../../util/types';
 import * as log from '../../util/log';
@@ -118,29 +119,40 @@ const resolveTransitionMessage = (
       return isOwnTransition ? (
         <FormattedMessage id="ActivityFeed.ownTransitionRequest" values={{ listingTitle }} />
       ) : (
-        <FormattedMessage
-          id="ActivityFeed.transitionRequest"
-          values={{ displayName, listingTitle }}
-        />
-      );
+          <FormattedMessage
+            id="ActivityFeed.transitionRequest"
+            values={{ displayName, listingTitle }}
+          />
+        );
     case TRANSITION_ACCEPT:
       return isOwnTransition ? (
         <FormattedMessage id="ActivityFeed.ownTransitionAccept" />
       ) : (
-        <FormattedMessage id="ActivityFeed.transitionAccept" values={{ displayName }} />
-      );
+          <FormattedMessage id="ActivityFeed.transitionAccept" values={{ displayName }} />
+        );
+    case TRANSITION_ACCEPT_AUTO:
+      {
+        return isOwnTransition ? (
+          <FormattedMessage id="ActivityFeed.ownTransitionRequestAndAutoAccept" values={{ listingTitle }} />
+        ) : (
+            <FormattedMessage
+              id="ActivityFeed.transitionRequestAndAutoAccept"
+              values={{ displayName, listingTitle }}
+            />
+          );
+      }
     case TRANSITION_DECLINE:
       return isOwnTransition ? (
         <FormattedMessage id="ActivityFeed.ownTransitionDecline" />
       ) : (
-        <FormattedMessage id="ActivityFeed.transitionDecline" values={{ displayName }} />
-      );
+          <FormattedMessage id="ActivityFeed.transitionDecline" values={{ displayName }} />
+        );
     case TRANSITION_EXPIRE:
       return txRoleIsProvider(ownRole) ? (
         <FormattedMessage id="ActivityFeed.ownTransitionExpire" />
       ) : (
-        <FormattedMessage id="ActivityFeed.transitionExpire" values={{ displayName }} />
-      );
+          <FormattedMessage id="ActivityFeed.transitionExpire" values={{ displayName }} />
+        );
     case TRANSITION_CANCEL:
       return <FormattedMessage id="ActivityFeed.transitionCancel" />;
     case TRANSITION_COMPLETE:
@@ -226,8 +238,8 @@ const Transition = props => {
   const otherUsersName = txRoleIsProvider(ownRole) ? (
     <UserDisplayName user={customer} intl={intl} />
   ) : (
-    <UserDisplayName user={provider} intl={intl} />
-  );
+      <UserDisplayName user={provider} intl={intl} />
+    );
 
   const transitionMessage = resolveTransitionMessage(
     transaction,
@@ -347,7 +359,7 @@ export const ActivityFeedComponent = props => {
 
   // combine messages and transaction transitions
   const items = organizedItems(messages, transitions, hasOlderMessages || fetchMessagesInProgress);
-
+  
   const transitionComponent = transition => {
     if (transitionsAvailable) {
       return (

@@ -110,7 +110,7 @@ class PriceFilterPopup extends Component {
     const hasValue = value => value != null;
     const hasInitialValues = initialValues && hasValue(minPrice) && hasValue(maxPrice);
 
-    const label = hasInitialValues
+    const labelPrice = hasInitialValues
       ? intl.formatMessage(
           { id: 'PriceFilter.labelSelectedButton' },
           {
@@ -119,6 +119,18 @@ class PriceFilterPopup extends Component {
           }
         )
       : intl.formatMessage({ id: 'PriceFilter.label' });
+    
+    const labelNumOfPeople = hasInitialValues
+      ? intl.formatMessage(
+        { id: 'PriceFilter.labelSelectedButton' },
+        {
+          minPrice: minPrice,
+          maxPrice: maxPrice,
+        }
+      )
+      : intl.formatMessage({ id: 'PriceFilter.labelNumOfPeople' });
+
+    const label = this.props.numOfPeopleLabel ? labelNumOfPeople : labelPrice;
 
     const labelStyles = hasInitialValues ? css.labelSelected : css.label;
     const contentStyle = this.positionStyleForContent();

@@ -39,6 +39,8 @@ class MainPanel extends Component {
       showAsModalMaxWidth,
       primaryFilters,
       secondaryFilters,
+      isShowMap,
+      handleShowMapChange,
     } = this.props;
 
     const isSearchFiltersPanelOpen = !!secondaryFilters && this.state.isSearchFiltersPanelOpen;
@@ -76,6 +78,8 @@ class MainPanel extends Component {
     return (
       <div className={classes}>
         <SearchFilters
+          isShowMap={isShowMap}
+          handleShowMapChange={handleShowMapChange}
           className={css.searchFilters}
           urlQueryParams={urlQueryParams}
           listingsAreLoaded={listingsAreLoaded}
@@ -127,6 +131,7 @@ class MainPanel extends Component {
             <SearchResultsPanel
               className={css.searchListingsPanel}
               listings={listings}
+              isShowMap={isShowMap}
               pagination={listingsAreLoaded ? pagination : null}
               search={searchParamsForPagination}
               setActiveListing={onActivateListing}
