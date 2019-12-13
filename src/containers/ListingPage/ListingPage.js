@@ -51,6 +51,9 @@ import SectionReviews from './SectionReviews';
 import SectionHostMaybe from './SectionHostMaybe';
 import SectionRulesMaybe from './SectionRulesMaybe';
 import SectionMapMaybe from './SectionMapMaybe';
+import SectionNumOfPeople from "./SectionNumOfPeople";
+// import SectionAnimals from "./SectionAnimals"
+import SectionSubCategories from "./SectionSubCategories";
 import css from './ListingPage.css';
 
 const MIN_LENGTH_FOR_LONG_WORDS_IN_TITLE = 16;
@@ -101,7 +104,7 @@ export class ListingPageComponent extends Component {
     const listingId = new UUID(params.id);
     const listing = getListing(listingId);
 
-    const { bookingDates, ...bookingData } = values;
+    const { bookingDates, bookingTimes, ...bookingData } = values;
 
     const initialValues = {
       listing,
@@ -109,6 +112,8 @@ export class ListingPageComponent extends Component {
       bookingDates: {
         bookingStart: bookingDates.startDate,
         bookingEnd: bookingDates.endDate,
+        bookingStartTime: bookingTimes.startTime,
+        bookingEndTime: bookingTimes.endTime,
       },
       confirmPaymentError: null,
     };
@@ -190,6 +195,9 @@ export class ListingPageComponent extends Component {
       fetchTimeSlotsError,
       categoriesConfig,
       amenitiesConfig,
+      // capacityOptions,
+      // animalsConfig,
+      subCategories,
     } = this.props;
 
     const listingId = new UUID(rawParams.id);
@@ -427,7 +435,9 @@ export class ListingPageComponent extends Component {
                     onContactUser={this.onContactUser}
                   />
                   <SectionDescriptionMaybe description={description} />
+                  <SectionNumOfPeople publicData={publicData}/>
                   <SectionFeaturesMaybe options={amenitiesConfig} publicData={publicData} />
+                  <SectionSubCategories options={subCategories} publicData={publicData} />
                   <SectionRulesMaybe publicData={publicData} />
                   <SectionMapMaybe
                     geolocation={geolocation}
@@ -461,6 +471,7 @@ export class ListingPageComponent extends Component {
                   onManageDisableScrolling={onManageDisableScrolling}
                   timeSlots={timeSlots}
                   fetchTimeSlotsError={fetchTimeSlotsError}
+                  publicData={publicData}
                 />
               </div>
             </div>
@@ -486,6 +497,10 @@ ListingPageComponent.defaultProps = {
   sendEnquiryError: null,
   categoriesConfig: config.custom.categories,
   amenitiesConfig: config.custom.amenities,
+  capacityOptions: config.custom.capacityOptions,
+  // animalsConfig: config.custom.animals,
+  subCategories: config.custom.subCategories,
+
 };
 
 ListingPageComponent.propTypes = {
@@ -527,6 +542,9 @@ ListingPageComponent.propTypes = {
 
   categoriesConfig: array,
   amenitiesConfig: array,
+  capacityOptions: array,
+  // animalsConfig: array,
+  subCategories: array,
 };
 
 const mapStateToProps = state => {

@@ -198,6 +198,8 @@ class SearchFiltersMobileComponent extends Component {
       dateRangeFilter,
       keywordFilter,
       intl,
+      numberOfPeopleFilter,
+      numOfPeopleFilter,
     } = this.props;
 
     const classes = classNames(rootClassName || css.root, className);
@@ -235,6 +237,24 @@ class SearchFiltersMobileComponent extends Component {
       />
     ) : null;
 
+    const numberOfPeopleLabel = intl.formatMessage({
+      id: 'SearchFiltersMobile.numberOfPeopleLabel',
+    });
+
+    const initialNumberOfPeople = numberOfPeopleFilter ? this.initialValue(numberOfPeopleFilter.paramName) : null;
+
+    const numberOfPeopleFilterElement = numberOfPeopleFilter ? (
+      <SelectSingleFilter
+        urlParam={numberOfPeopleFilter.paramName}
+        label={numberOfPeopleLabel}
+        onSelect={this.handleSelectSingle}
+        liveEdit
+        options={numberOfPeopleFilter.options}
+        initialValue={initialNumberOfPeople}
+        intl={intl}
+      />
+    ) : null;
+
     const amenitiesLabel = intl.formatMessage({ id: 'SearchFiltersMobile.amenitiesLabel' });
 
     const initialAmenities = this.initialValues(amenitiesFilter.paramName);
@@ -262,6 +282,20 @@ class SearchFiltersMobileComponent extends Component {
         liveEdit
         {...priceFilter.config}
         initialValues={initialPriceRange}
+      />
+    ) : null;
+
+    const initialNumOfPeople = this.initialPriceRangeValue(numOfPeopleFilter.paramName);
+
+    const numOfPeopleFilterElement = priceFilter ? (
+      <PriceFilter
+        id="SearchFiltersMobile.numOfPeopleFilter"
+        urlParam={numOfPeopleFilter.paramName}
+        onSubmit={this.handlePrice}
+        numOfPeopleLabel={"Num Of People"}
+        liveEdit
+        {...numOfPeopleFilter.config}
+        initialValues={initialNumOfPeople}
       />
     ) : null;
 
@@ -331,8 +365,10 @@ class SearchFiltersMobileComponent extends Component {
             <div className={css.filtersWrapper}>
               {keywordFilterElement}
               {categoryFilterElement}
+              {numberOfPeopleFilterElement}
               {amenitiesFilterElement}
               {priceFilterElement}
+              {numOfPeopleFilterElement}
               {dateRangeFilterElement}
             </div>
           ) : null}
@@ -359,6 +395,8 @@ SearchFiltersMobileComponent.defaultProps = {
   amenitiesFilter: null,
   priceFilter: null,
   dateRangeFilter: null,
+  numberOfPeopleFilter: null,
+  numOfPeopleFilter: null,
 };
 
 SearchFiltersMobileComponent.propTypes = {
@@ -379,6 +417,7 @@ SearchFiltersMobileComponent.propTypes = {
   amenitiesFilter: propTypes.filterConfig,
   priceFilter: propTypes.filterConfig,
   dateRangeFilter: propTypes.filterConfig,
+  numOfPeopleFilter: propTypes.filterConfig,
 
   // from injectIntl
   intl: intlShape.isRequired,

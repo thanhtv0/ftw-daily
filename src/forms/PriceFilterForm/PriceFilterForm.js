@@ -113,6 +113,8 @@ const PriceFilterFormComponent = props => {
           [css.isOpen]: !showAsPopup && isOpen,
         });
 
+        const label = id === "SearchFilters.numOfPeopleFilter" ? "PriceFilterForm.numOfPeopleLabel" : "PriceFilterForm.label";
+
         return (
           <Form
             className={classes}
@@ -123,7 +125,7 @@ const PriceFilterFormComponent = props => {
           >
             <div className={css.contentWrapper}>
               <span className={css.label}>
-                <FormattedMessage id="PriceFilterForm.label" />
+                <FormattedMessage id={label} />
               </span>
               <div className={css.inputsWrapper}>
                 <Field

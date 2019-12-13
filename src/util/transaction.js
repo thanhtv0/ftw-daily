@@ -14,11 +14,17 @@ import { ensureTransaction } from './data';
 // At this transition a PaymentIntent is created by Marketplace API.
 // After this transition, the actual payment must be made on client-side directly to Stripe.
 export const TRANSITION_REQUEST_PAYMENT = 'transition/request-payment';
+export const TRANSITION_REQUEST_PAYMENT_10 = 'transition/request-payment-commission-10';
+export const TRANSITION_REQUEST_PAYMENT_15 = "transition/request-payment-commission-15";
+export const TRANSITION_REQUEST_PAYMENT_20 = "transition/request-payment-commission-20";
 
 // A customer can also initiate a transaction with an enquiry, and
 // then transition that with a request.
 export const TRANSITION_ENQUIRE = 'transition/enquire';
 export const TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY = 'transition/request-payment-after-enquiry';
+export const TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_10 = 'transition/request-payment-after-enquiry-commission-10';
+export const TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_15 = 'transition/request-payment-after-enquiry-commission-15';
+export const TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_20 = 'transition/request-payment-after-enquiry-commission-20';
 
 // Stripe SDK might need to ask 3D security from customer, in a separate front-end step.
 // Therefore we need to make another transition to Marketplace API,
@@ -32,6 +38,7 @@ export const TRANSITION_EXPIRE_PAYMENT = 'transition/expire-payment';
 // When the provider accepts or declines a transaction from the
 // SalePage, it is transitioned with the accept or decline transition.
 export const TRANSITION_ACCEPT = 'transition/accept';
+export const TRANSITION_ACCEPT_AUTO = 'transition/accept-auto';
 export const TRANSITION_DECLINE = 'transition/decline';
 
 // The backend automatically expire the transaction.
@@ -108,7 +115,7 @@ const stateDescription = {
   // id is defined only to support Xstate format.
   // However if you have multiple transaction processes defined,
   // it is best to keep them in sync with transaction process aliases.
-  id: 'preauth-with-nightly-booking/release-1',
+  id: 'preauth-with-nightly-booking-custom/release-1',
 
   // This 'initial' state is a starting point for new transaction
   initial: STATE_INITIAL,
@@ -119,11 +126,17 @@ const stateDescription = {
       on: {
         [TRANSITION_ENQUIRE]: STATE_ENQUIRY,
         [TRANSITION_REQUEST_PAYMENT]: STATE_PENDING_PAYMENT,
+        [TRANSITION_REQUEST_PAYMENT_10]: STATE_PENDING_PAYMENT,
+        [TRANSITION_REQUEST_PAYMENT_15]: STATE_PENDING_PAYMENT,
+        [TRANSITION_REQUEST_PAYMENT_20]: STATE_PENDING_PAYMENT,
       },
     },
     [STATE_ENQUIRY]: {
       on: {
         [TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY]: STATE_PENDING_PAYMENT,
+        [TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_10]: STATE_PENDING_PAYMENT,
+        [TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_15]: STATE_PENDING_PAYMENT,
+        [TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY_20]: STATE_PENDING_PAYMENT,
       },
     },
 
@@ -131,6 +144,7 @@ const stateDescription = {
       on: {
         [TRANSITION_EXPIRE_PAYMENT]: STATE_PAYMENT_EXPIRED,
         [TRANSITION_CONFIRM_PAYMENT]: STATE_PREAUTHORIZED,
+        [TRANSITION_ACCEPT_AUTO]: STATE_ACCEPTED,
       },
     },
 
@@ -299,6 +313,7 @@ export const getReview2Transition = isCustomer =>
 export const isRelevantPastTransition = transition => {
   return [
     TRANSITION_ACCEPT,
+    TRANSITION_ACCEPT_AUTO,
     TRANSITION_CANCEL,
     TRANSITION_COMPLETE,
     TRANSITION_CONFIRM_PAYMENT,

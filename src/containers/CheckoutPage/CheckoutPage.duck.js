@@ -3,9 +3,7 @@ import config from '../../config';
 import { denormalisedResponseEntities } from '../../util/data';
 import { storableError } from '../../util/errors';
 import {
-  TRANSITION_REQUEST_PAYMENT,
-  TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY,
-  TRANSITION_CONFIRM_PAYMENT,
+  TRANSITION_CONFIRM_PAYMENT, TRANSITION_ACCEPT_AUTO,
 } from '../../util/transaction';
 import * as log from '../../util/log';
 import { fetchCurrentUserHasOrdersSuccess, fetchCurrentUser } from '../../ducks/user.duck';
@@ -159,18 +157,23 @@ export const stripeCustomerError = e => ({
 
 /* ================ Thunks ================ */
 
-export const initiateOrder = (orderParams, transactionId) => (dispatch, getState, sdk) => {
+export const initiateOrder = ({transition, ...rest}, transactionId) => (dispatch, getState, sdk) => {
   dispatch(initiateOrderRequest());
+  //TODO: change transition
   const bodyParams = transactionId
     ? {
         id: transactionId,
-        transition: TRANSITION_REQUEST_PAYMENT_AFTER_ENQUIRY,
-        params: orderParams,
+        transition: transition.request_after,
+        params: {
+          ...rest,
+        },
       }
     : {
         processAlias: config.bookingProcessAlias,
-        transition: TRANSITION_REQUEST_PAYMENT,
-        params: orderParams,
+        transition: transition.request,
+        params: {
+          ...rest
+        },
       };
   const queryParams = {
     include: ['booking', 'provider'],
@@ -192,20 +195,19 @@ export const initiateOrder = (orderParams, transactionId) => (dispatch, getState
       const transactionIdMaybe = transactionId ? { transactionId: transactionId.uuid } : {};
       log.error(e, 'initiate-order-failed', {
         ...transactionIdMaybe,
-        listingId: orderParams.listingId.uuid,
-        bookingStart: orderParams.bookingStart,
-        bookingEnd: orderParams.bookingEnd,
+        listingId: rest.listingId.uuid,
+        bookingStart: rest.bookingStart,
+        bookingEnd: rest.bookingEnd,
       });
       throw e;
     });
 };
 
-export const confirmPayment = orderParams => (dispatch, getState, sdk) => {
+export const confirmPayment = ({autoAcceptBooking, ...orderParams}) => (dispatch, getState, sdk) => {
   dispatch(confirmPaymentRequest());
-
   const bodyParams = {
     id: orderParams.transactionId,
-    transition: TRANSITION_CONFIRM_PAYMENT,
+    transition: autoAcceptBooking ? TRANSITION_ACCEPT_AUTO : TRANSITION_CONFIRM_PAYMENT,
     params: {},
   };
 
@@ -259,13 +261,13 @@ export const sendMessage = params => (dispatch, getState, sdk) => {
  * pricing info for the booking breakdown to get a proper estimate for
  * the price with the chosen information.
  */
-export const speculateTransaction = params => (dispatch, getState, sdk) => {
+export const speculateTransaction = ({transition, ...rest}) => (dispatch, getState, sdk) => {
   dispatch(speculateTransactionRequest());
   const bodyParams = {
-    transition: TRANSITION_REQUEST_PAYMENT,
+    transition: transition.request,
     processAlias: config.bookingProcessAlias,
     params: {
-      ...params,
+      ...rest,
       cardToken: 'CheckoutPage_speculative_card_token',
     },
   };
@@ -284,7 +286,7 @@ export const speculateTransaction = params => (dispatch, getState, sdk) => {
       dispatch(speculateTransactionSuccess(tx));
     })
     .catch(e => {
-      const { listingId, bookingStart, bookingEnd } = params;
+      const { listingId, bookingStart, bookingEnd } = rest;
       log.error(e, 'speculate-transaction-failed', {
         listingId: listingId.uuid,
         bookingStart,
@@ -293,6 +295,7 @@ export const speculateTransaction = params => (dispatch, getState, sdk) => {
       return dispatch(speculateTransactionError(storableError(e)));
     });
 };
+
 
 // StripeCustomer is a relantionship to currentUser
 // We need to fetch currentUser with correct params to include relationship

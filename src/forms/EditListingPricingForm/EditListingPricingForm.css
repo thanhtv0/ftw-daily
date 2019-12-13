@@ -33,3 +33,17 @@
     margin-top: 100px;
   }
 }
+
+.wrapperCheckBox {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.wrapperCheckBox label {
+  margin-left: 10px;
+}
+
+.wrapperCheckBox input {
+  width: auto !important;
+}

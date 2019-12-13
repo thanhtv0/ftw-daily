@@ -1,7 +1,7 @@
 import React from 'react';
 import { bool, func, shape, string } from 'prop-types';
 import { compose } from 'redux';
-import { Form as FinalForm } from 'react-final-form';
+import { Form as FinalForm, Field } from 'react-final-form';
 import { intlShape, injectIntl, FormattedMessage } from '../../util/reactIntl';
 import classNames from 'classnames';
 import config from '../../config';
@@ -17,11 +17,10 @@ const { Money } = sdkTypes;
 export const EditListingPricingFormComponent = props => (
   <FinalForm
     {...props}
-    render={formRenderProps => {
+    render={fieldRenderProps => {
       const {
         className,
         disabled,
-        ready,
         handleSubmit,
         intl,
         invalid,
@@ -30,7 +29,7 @@ export const EditListingPricingFormComponent = props => (
         updated,
         updateInProgress,
         fetchErrors,
-      } = formRenderProps;
+      } = fieldRenderProps;
 
       const unitType = config.bookingUnitType;
       const isNightly = unitType === LINE_ITEM_NIGHT;
@@ -39,8 +38,8 @@ export const EditListingPricingFormComponent = props => (
       const translationKey = isNightly
         ? 'EditListingPricingForm.pricePerNight'
         : isDaily
-        ? 'EditListingPricingForm.pricePerDay'
-        : 'EditListingPricingForm.pricePerUnit';
+          ? 'EditListingPricingForm.pricePerDay'
+          : 'EditListingPricingForm.pricePerUnit';
 
       const pricePerUnitMessage = intl.formatMessage({
         id: translationKey,
@@ -72,7 +71,7 @@ export const EditListingPricingFormComponent = props => (
         : priceRequired;
 
       const classes = classNames(css.root, className);
-      const submitReady = (updated && pristine) || ready;
+      const submitReady = updated && pristine;
       const submitInProgress = updateInProgress;
       const submitDisabled = invalid || disabled || submitInProgress;
       const { updateListingError, showListingsError } = fetchErrors || {};
@@ -100,6 +99,36 @@ export const EditListingPricingFormComponent = props => (
             validate={priceValidators}
           />
 
+          <Field
+            id={"saleOfOnMonday"}
+            name={"saleOfOnMonday"}
+            type={"checkbox"}
+          >
+            {
+              props => (
+                <div className={css.wrapperCheckBox} >
+                  <input {...props.input} type="checkbox" />
+                  <label>Sale of {config.saleOfPrice}$ when customer booking on monday</label>
+                </div>
+              )
+            }
+          </Field>
+
+          <Field
+            id={"autoAcceptBooking"}
+            name={"autoAcceptBooking"}
+            type={"checkbox"}
+          >
+            {
+              props => (
+                <div className={css.wrapperCheckBox} >
+                  <input {...props.input} type="checkbox" />
+                  <label>Auto accpect booking</label>
+                </div>
+              )
+            }
+          </Field>
+
           <Button
             className={css.submitButton}
             type="submit"
@@ -121,8 +150,6 @@ EditListingPricingFormComponent.propTypes = {
   intl: intlShape.isRequired,
   onSubmit: func.isRequired,
   saveActionMsg: string.isRequired,
-  disabled: bool.isRequired,
-  ready: bool.isRequired,
   updated: bool.isRequired,
   updateInProgress: bool.isRequired,
   fetchErrors: shape({

@@ -77,6 +77,11 @@ const SearchFiltersComponent = props => {
     searchFiltersPanelSelectedCount,
     history,
     intl,
+    numberOfPeopleFilter,
+    numOfPeopleFilter,
+    subCategoriesFilter,
+    isShowMap,
+    handleShowMapChange,
   } = props;
 
   const hasNoResult = listingsAreLoaded && resultsCount === 0;
@@ -86,9 +91,17 @@ const SearchFiltersComponent = props => {
     id: 'SearchFilters.categoryLabel',
   });
 
+  const numberOfPeopleLabel = intl.formatMessage({
+    id: "SearchFilters.numberOfPeopleLabel",
+  })
+
   const amenitiesLabel = intl.formatMessage({
     id: 'SearchFilters.amenitiesLabel',
   });
+
+  const subCategoriesLabel = intl.formatMessage({
+    id: 'SearchFilters.subCategories',
+  })
 
   const keywordLabel = intl.formatMessage({
     id: 'SearchFilters.keywordLabel',
@@ -98,12 +111,24 @@ const SearchFiltersComponent = props => {
     ? initialValues(urlQueryParams, amenitiesFilter.paramName)
     : null;
 
+  const initialSubCategories = subCategoriesFilter
+    ? initialValues(urlQueryParams, subCategoriesFilter.paramName)
+    : null;
+
   const initialCategory = categoryFilter
     ? initialValue(urlQueryParams, categoryFilter.paramName)
     : null;
 
+  const initialNumberOfPeople = numberOfPeopleFilter
+    ? initialValue(urlQueryParams, numberOfPeopleFilter.paramName)
+    : null;
+
   const initialPriceRange = priceFilter
     ? initialPriceRangeValue(urlQueryParams, priceFilter.paramName)
+    : null;
+
+  const initialNumOfPeople = numOfPeopleFilter
+    ? initialPriceRangeValue(urlQueryParams, numOfPeopleFilter.paramName)
     : null;
 
   const initialDateRange = dateRangeFilter
@@ -177,6 +202,18 @@ const SearchFiltersComponent = props => {
     />
   ) : null;
 
+  const numberOfPeopleFilterElement = numberOfPeopleFilter ? (
+    <SelectSingleFilter 
+      urlParam={numberOfPeopleFilter.paramName}
+      label={numberOfPeopleLabel}
+      onSelect={handleSelectOption}
+      showAsPopup
+      options={numberOfPeopleFilter.options}
+      initialValue={initialNumberOfPeople}
+      contentPlacementOffset={FILTER_DROPDOWN_OFFSET}
+    />
+  ) : null;
+
   const amenitiesFilterElement = amenitiesFilter ? (
     <SelectMultipleFilter
       id={'SearchFilters.amenitiesFilter'}
@@ -191,6 +228,20 @@ const SearchFiltersComponent = props => {
     />
   ) : null;
 
+  const subCategoriesFilterElement = subCategoriesFilter ? (
+    <SelectMultipleFilter
+      id={'SearchFilters.subCategoriesFilter'}
+      name="subCategories"
+      urlParam={subCategoriesFilter.paramName}
+      label={subCategoriesLabel}
+      onSubmit={handleSelectOptions}
+      showAsPopup
+      options={subCategoriesFilter.options}
+      initialValues={initialSubCategories}
+      contentPlacementOffset={FILTER_DROPDOWN_OFFSET}
+    />
+  ) : null;
+
   const priceFilterElement = priceFilter ? (
     <PriceFilter
       id="SearchFilters.priceFilter"
@@ -199,6 +250,19 @@ const SearchFiltersComponent = props => {
       showAsPopup
       {...priceFilter.config}
       initialValues={initialPriceRange}
+      contentPlacementOffset={FILTER_DROPDOWN_OFFSET}
+    />
+  ) : null;
+
+  const numOfPeopleFileterElement = numOfPeopleFilter ? (
+    <PriceFilter
+      id="SearchFilters.numOfPeopleFilter"
+      urlParam={numOfPeopleFilter.paramName}
+      onSubmit={handlePrice}
+      numOfPeopleLabel={"Num Of People"}
+      showAsPopup
+      {...numOfPeopleFilter.config}
+      initialValues={initialNumOfPeople}
       contentPlacementOffset={FILTER_DROPDOWN_OFFSET}
     />
   ) : null;
@@ -246,6 +310,9 @@ const SearchFiltersComponent = props => {
       />
     </button>
   ) : null;
+
+  const showMapLabel = isShowMap && isShowMap ? "Hide map" : "Show map";
+
   return (
     <div className={classes}>
       <div className={css.filters}>
@@ -255,15 +322,30 @@ const SearchFiltersComponent = props => {
         {dateRangeFilterElement}
         {keywordFilterElement}
         {toggleSearchFiltersPanelButton}
+        {numberOfPeopleFilterElement}
+        {numOfPeopleFileterElement}
+        {subCategoriesFilterElement}
       </div>
 
-      {listingsAreLoaded && resultsCount > 0 ? (
-        <div className={css.searchResultSummary}>
-          <span className={css.resultsFound}>
-            <FormattedMessage id="SearchFilters.foundResults" values={{ count: resultsCount }} />
+      <div className={css.rightFilter}>
+        <div className={css.boxShowMap}>
+          <span className={css.showmap}>
+            {showMapLabel}
           </span>
+          <label className={css.switch}>
+              <input onChange={(e) => handleShowMapChange()} type={"checkbox"} checked={isShowMap}/>
+              <span className={classNames(css.slider, css.round)}></span>
+          </label>
         </div>
-      ) : null}
+
+        {listingsAreLoaded && resultsCount > 0 ? (
+          <div className={css.searchResultSummary}>
+            <span className={css.resultsFound}>
+              <FormattedMessage id="SearchFilters.foundResults" values={{ count: resultsCount }} />
+            </span>
+          </div>
+        ) : null}
+      </div>
 
       {hasNoResult ? (
         <div className={css.noSearchResults}>
@@ -287,11 +369,13 @@ SearchFiltersComponent.defaultProps = {
   searchingInProgress: false,
   categoryFilter: null,
   amenitiesFilter: null,
+  subCategoriesFilter: null,
   priceFilter: null,
   dateRangeFilter: null,
   isSearchFiltersPanelOpen: false,
   toggleSearchFiltersPanel: null,
   searchFiltersPanelSelectedCount: 0,
+  isShowMap: true,
 };
 
 SearchFiltersComponent.propTypes = {
@@ -304,6 +388,7 @@ SearchFiltersComponent.propTypes = {
   onManageDisableScrolling: func.isRequired,
   categoriesFilter: propTypes.filterConfig,
   amenitiesFilter: propTypes.filterConfig,
+  subCategoriesFilter: propTypes.filterConfig,
   priceFilter: propTypes.filterConfig,
   dateRangeFilter: propTypes.filterConfig,
   isSearchFiltersPanelOpen: bool,

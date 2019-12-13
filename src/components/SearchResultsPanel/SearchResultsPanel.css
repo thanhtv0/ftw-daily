@@ -63,6 +63,21 @@
   }
 }
 
+.listingCardHideMap {
+  margin-bottom: 36px;
+  flex-basis: 100%;
+
+  @media (--viewportLarge) {
+    flex-basis: calc(100%/3 - 24px);
+    margin-left: 24px;
+  }
+
+  @media (--viewportXLarge) {
+    flex-basis: calc(100%/4 - 24px);
+    margin-left: 24px;
+  }
+}
+
 /**
  * Remove margin-right from listingCards on the last column
  * This is a special case in the world of breakpoints. Nth-of-type effects every nth item.

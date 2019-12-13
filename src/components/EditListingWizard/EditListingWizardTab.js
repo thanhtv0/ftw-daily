@@ -17,26 +17,35 @@ import {
   EditListingPhotosPanel,
   EditListingPoliciesPanel,
   EditListingPricingPanel,
+  EditListingNumberOfPeoplePanel,
+  EditListingAnimalsPanel,
+  EditListingSubCategoriesPanel,
 } from '../../components';
 
 import css from './EditListingWizard.css';
 
-export const AVAILABILITY = 'availability';
 export const DESCRIPTION = 'description';
+export const AVAILABILITY = 'availability';
 export const FEATURES = 'features';
+export const PEOPLES = 'peoples';
+export const ANIMALS = "animals";
 export const POLICY = 'policy';
 export const LOCATION = 'location';
 export const PRICING = 'pricing';
 export const PHOTOS = 'photos';
+export const SUB_CATEGORY = 'sub_category'
 
 // EditListingWizardTab component supports these tabs
 export const SUPPORTED_TABS = [
   DESCRIPTION,
+  AVAILABILITY,
   FEATURES,
+  PEOPLES,
+  ANIMALS,
   POLICY,
   LOCATION,
   PRICING,
-  AVAILABILITY,
+  SUB_CATEGORY,
   PHOTOS,
 ];
 
@@ -150,9 +159,6 @@ const EditListingWizardTab = props => {
       onChange,
       panelUpdated: updatedTab === tab,
       updateInProgress,
-      // newListingPublished and fetchInProgress are flags for the last wizard tab
-      ready: newListingPublished,
-      disabled: fetchInProgress,
     };
   };
 
@@ -247,10 +253,13 @@ const EditListingWizardTab = props => {
         ? 'EditListingWizard.saveNewPhotos'
         : 'EditListingWizard.saveEditPhotos';
 
+      // newListingPublished and fetchInProgress are flags for the last wizard tab
       return (
         <EditListingPhotosPanel
           {...panelProps(PHOTOS)}
           submitButtonText={intl.formatMessage({ id: submitButtonTranslationKey })}
+          newListingPublished={newListingPublished}
+          fetchInProgress={fetchInProgress}
           images={images}
           onImageUpload={onImageUpload}
           onRemoveImage={onRemoveImage}
@@ -258,6 +267,48 @@ const EditListingWizardTab = props => {
             onCompleteEditListingWizardTab(tab, values);
           }}
           onUpdateImageOrder={onUpdateImageOrder}
+        />
+      );
+    }
+    case PEOPLES: {
+      const submitButtonTranslationKey = isNewListingFlow
+        ? 'EditListingWizard.saveNewNumberOfPeopple'
+        : 'EditListingWizard.saveEditNumberOfPeopple';
+      return (
+        <EditListingNumberOfPeoplePanel
+          {...panelProps(PEOPLES)}
+          submitButtonText={intl.formatMessage({ id: submitButtonTranslationKey })}
+          onSubmit={values => {
+            onCompleteEditListingWizardTab(tab, values);
+          }}
+        />
+      );
+    }
+    case ANIMALS: {
+      const submitButtonTranslationKey = isNewListingFlow
+        ? 'EditListingWizard.saveNewAnimals'
+        : 'EditListingWizard.saveEditAnimals';
+      return (
+        <EditListingAnimalsPanel
+          {...panelProps(ANIMALS)}
+          submitButtonText={intl.formatMessage({ id: submitButtonTranslationKey })}
+          onSubmit={values => {
+            onCompleteEditListingWizardTab(tab, values);
+          }}
+        />
+      );
+    }
+    case SUB_CATEGORY: {
+      const submitButtonTranslationKey = isNewListingFlow
+        ? 'EditListingWizard.saveNewSubCategory'
+        : 'EditListingWizard.saveEditSubCategory';
+      return (
+        <EditListingSubCategoriesPanel
+          {...panelProps(ANIMALS)}
+          submitButtonText={intl.formatMessage({ id: submitButtonTranslationKey })}
+          onSubmit={values => {
+            onCompleteEditListingWizardTab(tab, values);
+          }}
         />
       );
     }

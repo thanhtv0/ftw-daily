@@ -34,6 +34,15 @@
   flex-shrink: 0;
 }
 
+.numberroom {
+  margin-bottom: 50px;
+}
+
+.numberroom label {
+  font-size: 25px;
+  font-weight: bold;
+}
+
 @media (--viewportMedium) {
   .root {
     padding-top: 2px;
@@ -53,5 +62,18 @@
     display: inline-block;
     width: 241px;
     margin-top: 86px;
+  }
+}
+
+@media (--viewportLarge) {
+  .numberroom {
+    margin-right: 80px;
+  }
+}
+
+@media (--viewportLargeWithPaddings) {
+  .numberroom {
+    margin-right: 0px;
+    margin-bottom: 0px;
   }
 }
