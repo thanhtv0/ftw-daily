@@ -6,6 +6,7 @@ import { ensureOwnListing } from '../../util/data';
 import { LISTING_STATE_DRAFT } from '../../util/types';
 import { ListingLink } from '../../components';
 import { EditListingAvailabilityForm } from '../../forms';
+import config from "../../config"
 
 import css from './EditListingAvailabilityPanel.css';
 
@@ -28,19 +29,22 @@ const EditListingAvailabilityPanel = props => {
   const classes = classNames(rootClassName || css.root, className);
   const currentListing = ensureOwnListing(listing);
   const isPublished = currentListing.id && currentListing.attributes.state !== LISTING_STATE_DRAFT;
+  const seatsDefault = config.seatsDefault;
+
   const defaultAvailabilityPlan = {
     type: 'availability-plan/day',
     entries: [
-      { dayOfWeek: 'mon', seats: 1 },
-      { dayOfWeek: 'tue', seats: 1 },
-      { dayOfWeek: 'wed', seats: 1 },
-      { dayOfWeek: 'thu', seats: 1 },
-      { dayOfWeek: 'fri', seats: 1 },
-      { dayOfWeek: 'sat', seats: 1 },
-      { dayOfWeek: 'sun', seats: 1 },
+      { dayOfWeek: 'mon', seats: seatsDefault },
+      { dayOfWeek: 'tue', seats: seatsDefault },
+      { dayOfWeek: 'wed', seats: seatsDefault },
+      { dayOfWeek: 'thu', seats: seatsDefault },
+      { dayOfWeek: 'fri', seats: seatsDefault },
+      { dayOfWeek: 'sat', seats: seatsDefault },
+      { dayOfWeek: 'sun', seats: seatsDefault },
     ],
   };
   const availabilityPlan = currentListing.attributes.availabilityPlan || defaultAvailabilityPlan;
+  const seats = currentListing.attributes.publicData.seats || seatsDefault;
 
   return (
     <div className={classes}>
@@ -57,15 +61,26 @@ const EditListingAvailabilityPanel = props => {
       <EditListingAvailabilityForm
         className={css.form}
         listingId={currentListing.id}
-        initialValues={{ availabilityPlan }}
+        initialValues={{ availabilityPlan, seats }}
         availability={availability}
         availabilityPlan={availabilityPlan}
-        onSubmit={() => {
+        onSubmit={(values) => {
           // We save the default availability plan
           // I.e. this listing is available every night.
           // Exceptions are handled with live edit through a calendar,
           // which is visible on this panel.
-          onSubmit({ availabilityPlan });
+          const {availabilityPlan, seats} = values;
+          for(let ele of availabilityPlan.entries) {
+            ele.seats = parseInt(seats);
+          }
+
+          const updatedData = {
+            availabilityPlan,
+            publicData: {
+              seats,
+            }
+          }
+          onSubmit(updatedData);
         }}
         onChange={onChange}
         saveActionMsg={submitButtonText}
@@ -98,8 +113,8 @@ EditListingAvailabilityPanel.propTypes = {
     onCreateAvailabilityException: func.isRequired,
     onDeleteAvailabilityException: func.isRequired,
   }).isRequired,
-  disabled: bool.isRequired,
-  ready: bool.isRequired,
+  disabled: bool,
+  ready: bool,
   onSubmit: func.isRequired,
   onChange: func.isRequired,
   submitButtonText: string.isRequired,

@@ -43,6 +43,15 @@
   font-weight: bold;
 }
 
+.seatsWrapper {
+  margin-bottom: 30px;
+}
+
+.seatsWrapper label {
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+
 @media (--viewportMedium) {
   .root {
     padding-top: 2px;
@@ -63,6 +72,10 @@
     width: 241px;
     margin-top: 86px;
   }
+
+  .seatsWrapper {
+    margin-right: 88px;
+  }
 }
 
 @media (--viewportLarge) {
@@ -75,5 +88,8 @@
   .numberroom {
     margin-right: 0px;
     margin-bottom: 0px;
+  }
+  .seatsWrapper {
+    margin-right: 0px;
   }
 }

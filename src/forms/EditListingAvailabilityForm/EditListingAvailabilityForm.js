@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { bool, func, object, string } from 'prop-types';
 import { compose } from 'redux';
-import { Form as FinalForm } from 'react-final-form';
+import { Form as FinalForm, Field } from 'react-final-form';
 import { intlShape, injectIntl, FormattedMessage } from '../../util/reactIntl';
 import classNames from 'classnames';
 import { propTypes } from '../../util/types';
@@ -32,6 +32,7 @@ export class EditListingAvailabilityFormComponent extends Component {
             availability,
             availabilityPlan,
             listingId,
+            initialValues,
           } = formRenderProps;
 
           const errorMessage = updateError ? (
@@ -44,6 +45,7 @@ export class EditListingAvailabilityFormComponent extends Component {
           const submitReady = (updated && pristine) || ready;
           const submitInProgress = updateInProgress;
           const submitDisabled = invalid || disabled || submitInProgress;
+          const { seats } = initialValues;
 
           return (
             <Form className={classes} onSubmit={handleSubmit}>
@@ -53,6 +55,19 @@ export class EditListingAvailabilityFormComponent extends Component {
                   availability={availability}
                   availabilityPlan={availabilityPlan}
                   listingId={listingId}
+                  seatsInit={seats}
+                />
+              </div>
+
+              <div className={css.seatsWrapper}>
+                <label>Seats</label>
+                <Field
+                  id='seats'
+                  name="seats"
+                  component="input"
+                  type="number"
+                  placeholder="1"
+                  min={1}
                 />
               </div>
 
@@ -81,8 +96,8 @@ EditListingAvailabilityFormComponent.propTypes = {
   intl: intlShape.isRequired,
   onSubmit: func.isRequired,
   saveActionMsg: string.isRequired,
-  disabled: bool.isRequired,
-  ready: bool.isRequired,
+  disabled: bool,
+  ready: bool,
   updated: bool.isRequired,
   updateError: propTypes.error,
   updateInProgress: bool.isRequired,

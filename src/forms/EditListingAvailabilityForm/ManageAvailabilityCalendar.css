@@ -322,6 +322,67 @@
   margin: 0;
 }
 
+.wrapper {
+  position: relative;
+}
+
+.modal {
+  display: block; /* Hidden by default */
+  position: absolute; /* Stay in place */
+  z-index: 2; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.2); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.modalContent {
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  height: 160px;
+  width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* The Close Button */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.buttonWrapper {
+  margin-top: 20px;
+  float: right;
+}
+
+.buttonWrapper button {
+  outline: none;
+
+}
+
+.btnCancel {
+  margin-left: 15px;
+}
+
+.warning {
+  color: red;
+  font-size: 18px;
+}
+
 @media (--viewportSmall) {
   /* day aka table cell content should have bigger paddings when there's more space */
   .day {

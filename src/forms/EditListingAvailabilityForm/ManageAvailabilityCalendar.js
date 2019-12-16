@@ -18,6 +18,7 @@ import {
 import { DAYS_OF_WEEK, propTypes } from '../../util/types';
 import { monthIdString, monthIdStringInUTC } from '../../util/dates';
 import { IconArrowHead, IconSpinner } from '../../components';
+import ModalEditAvailabilitySeats from "./ModalEditAvailabilitySeats";
 
 import css from './ManageAvailabilityCalendar.css';
 
@@ -114,16 +115,20 @@ const isPast = date => !isInclusivelyAfterDay(date, TODAY_MOMENT);
 const isAfterEndOfRange = date => !isInclusivelyBeforeDay(date, END_OF_RANGE_MOMENT);
 const isAfterEndOfBookingRange = date => !isInclusivelyBeforeDay(date, END_OF_BOOKING_RANGE_MOMENT);
 
-const isBooked = (bookings, day) => {
-  return !!bookings.find(b => {
+const countBooking = (bookings, day) => {
+  let countSeats = 0;
+  for (let b of bookings) {
     const booking = ensureBooking(b);
     const start = booking.attributes.start;
     const end = booking.attributes.end;
     const dayInUTC = day.clone().utc();
-
     // '[)' means that the range start is inclusive and range end is exclusive
-    return dayInUTC.isBetween(moment(start).utc(), moment(end).utc(), null, '[)');
-  });
+    if (dayInUTC.isBetween(moment(start).utc(), moment(end).utc(), null, '[)')) {
+      countSeats = countSeats + 1;
+    }
+  }
+
+  return countSeats;
 };
 
 const findException = (exceptions, day) => {
@@ -135,7 +140,7 @@ const findException = (exceptions, day) => {
   });
 };
 
-const isBlocked = (availabilityPlan, exception, date) => {
+const isBlocked = (availabilityPlan, exception, date, numOfBooking) => {
   const planEntries = ensureDayAvailabilityPlan(availabilityPlan).entries;
   const planEntry = planEntries.find(
     weekDayEntry => weekDayEntry.dayOfWeek === DAYS_OF_WEEK[date.isoWeekday() - 1]
@@ -146,31 +151,34 @@ const isBlocked = (availabilityPlan, exception, date) => {
     exception && ensureAvailabilityException(exception.availabilityException).attributes.seats;
 
   const seats = exception ? seatsFromException : seatsFromPlan;
-  return seats === 0;
+  return seats <= numOfBooking;
 };
 
-const dateModifiers = (availabilityPlan, exceptions, bookings, date) => {
+const dateModifiers = (availabilityPlan, exceptions, bookings, date, seatsInit = 1) => {
   const exception = findException(exceptions, date);
+  const numOfBooking = countBooking(bookings, date);
 
   return {
     isOutsideRange: isOutsideRange(date),
     isSameDay: isSameDay(date, TODAY_MOMENT),
-    isBlocked: isBlocked(availabilityPlan, exception, date),
-    isBooked: isBooked(bookings, date),
+    isBlocked: isBlocked(availabilityPlan, exception, date, numOfBooking),
+    isBooked: numOfBooking === seatsInit,
     isInProgress: exception && exception.inProgress,
     isFailed: exception && exception.error,
+    numOfBooking,
   };
 };
 
-const renderDayContents = (calendar, availabilityPlan) => date => {
+const renderDayContents = (calendar, availabilityPlan, seatsInit) => date => {
   // This component is for day/night based processes. If time-based process is used,
   // you might want to deal with local dates using monthIdString instead of monthIdStringInUTC.
   const { exceptions = [], bookings = [] } = calendar[monthIdStringInUTC(date)] || {};
-  const { isOutsideRange, isSameDay, isBlocked, isBooked, isInProgress, isFailed } = dateModifiers(
+  const { isOutsideRange, isSameDay, isBlocked, isBooked, isInProgress, isFailed, numOfBooking } = dateModifiers(
     availabilityPlan,
     exceptions,
     bookings,
-    date
+    date,
+    seatsInit
   );
 
   const dayClasses = classNames(css.default, {
@@ -181,14 +189,16 @@ const renderDayContents = (calendar, availabilityPlan) => date => {
     [css.exceptionError]: isFailed,
   });
 
+  const numOfBookingElement = isBooked ? null : numOfBooking !== 0 ? <span>{` (${numOfBooking})`}</span> : null;
+
   return (
     <div className={css.dayWrapper}>
       <span className={dayClasses}>
         {isInProgress ? (
           <IconSpinner rootClassName={css.inProgress} />
         ) : (
-          <span className={css.dayNumber}>{date.format('D')}</span>
-        )}
+            <span className={css.dayNumber}>{date.format('D')} {numOfBookingElement}</span>
+          )}
       </span>
     </div>
   );
@@ -214,6 +224,8 @@ class ManageAvailabilityCalendar extends Component {
       currentMonth: moment().startOf('month'),
       focused: true,
       date: null,
+      seatsValue: 1,
+      isOpen: false, //is modal open
     };
 
     this.fetchMonthData = this.fetchMonthData.bind(this);
@@ -309,27 +321,40 @@ class ManageAvailabilityCalendar extends Component {
   onDateChange(date) {
     this.setState({ date });
 
-    const { availabilityPlan, availability } = this.props;
+    const { availabilityPlan, availability, seatsInit } = this.props;
     const calendar = availability.calendar;
     // This component is for day/night based processes. If time-based process is used,
     // you might want to deal with local dates using monthIdString instead of monthIdStringInUTC.
     const { exceptions = [], bookings = [] } = calendar[monthIdStringInUTC(date)] || {};
-    const { isPast, isBlocked, isBooked, isInProgress } = dateModifiers(
+
+    const currentException = findException(exceptions, date);
+    const hasAvailabilityException = currentException && currentException.availabilityException.id;
+
+    let seats = seatsInit;
+
+    if (hasAvailabilityException) {
+      let seatsFromException = currentException.availabilityException.attributes.seats;
+      if (parseInt(seatsInit) < parseInt(seatsFromException)) {
+        this.onDayAvailabilityChange(date, seatsInit, exceptions);
+      }
+      else {
+        seats = seatsFromException;
+      }
+    }
+    else {
+      this.onDayAvailabilityChange(date, seatsInit, exceptions);
+    }
+
+    const { isBooked } = dateModifiers(
       availabilityPlan,
       exceptions,
       bookings,
-      date
+      date,
+      parseInt(seatsInit)
     );
 
-    if (isBooked || isPast || isInProgress) {
-      // Cannot allow or block a reserved or a past date or inProgress
-      return;
-    } else if (isBlocked) {
-      // Unblock the date (seats = 1)
-      this.onDayAvailabilityChange(date, 1, exceptions);
-    } else {
-      // Block the date (seats = 0)
-      this.onDayAvailabilityChange(date, 0, exceptions);
+    if (!isBooked) {
+      this.setState({ isOpen: true, seatsValue: seats })
     }
   }
 
@@ -364,6 +389,47 @@ class ManageAvailabilityCalendar extends Component {
     );
   }
 
+  onSeatsChange = (value) => {
+    this.setState({
+      seatsValue: value,
+    });
+  }
+
+  onCloseModal = () => {
+    this.setState({
+      isOpen: false
+    })
+  }
+
+  //Click save on modal
+  onSave = () => {
+    const { seatsValue, date } = this.state;
+    const { availabilityPlan, availability, seatsInit } = this.props;
+
+    if (seatsValue === "" || parseInt(seatsValue) > seatsInit)
+      return;
+
+    const calendar = availability.calendar;
+    const { exceptions = [], bookings = [] } = calendar[monthIdStringInUTC(date)] || {};
+
+    const { isInProgress } = dateModifiers(
+      availabilityPlan,
+      exceptions,
+      bookings,
+      date,
+      seatsInit,
+    );
+
+    if (isInProgress) {
+      return;
+    }
+
+    this.onDayAvailabilityChange(date, parseInt(seatsValue), exceptions);
+    this.setState({
+      isOpen: false
+    });
+  }
+
   render() {
     const {
       className,
@@ -373,9 +439,11 @@ class ManageAvailabilityCalendar extends Component {
       availabilityPlan,
       onMonthChanged,
       monthFormat,
+      seatsInit,
       ...rest
     } = this.props;
-    const { focused, date, currentMonth } = this.state;
+
+    const { focused, date, currentMonth, isOpen, seatsValue } = this.state;
     const { clientWidth: width } = this.dayPickerWrapper || { clientWidth: 0 };
     const hasWindow = typeof window !== 'undefined';
     const windowWidth = hasWindow ? window.innerWidth : 0;
@@ -397,6 +465,7 @@ class ManageAvailabilityCalendar extends Component {
 
     const monthName = currentMonth.format('MMMM');
     const classes = classNames(rootClassName || css.root, className);
+    const numericSeats = parseInt(seatsInit);
 
     return (
       <div
@@ -406,32 +475,43 @@ class ManageAvailabilityCalendar extends Component {
         }}
       >
         {width > 0 ? (
-          <div style={{ width: `${calendarGridWidth}px` }}>
-            <DayPickerSingleDateController
-              {...rest}
-              ref={c => {
-                this.dayPicker = c;
-              }}
-              numberOfMonths={1}
-              navPrev={<IconArrowHead direction="left" />}
-              navNext={<IconArrowHead direction="right" />}
-              weekDayFormat="ddd"
-              daySize={daySize}
-              renderDayContents={renderDayContents(calendar, availabilityPlan)}
-              focused={focused}
+          <div className={css.wrapper}>
+            <div style={{ width: `${calendarGridWidth}px` }}>
+              <DayPickerSingleDateController
+                {...rest}
+                ref={c => {
+                  this.dayPicker = c;
+                }}
+                numberOfMonths={1}
+                navPrev={<IconArrowHead direction="left" />}
+                navNext={<IconArrowHead direction="right" />}
+                weekDayFormat="ddd"
+                daySize={daySize}
+                renderDayContents={renderDayContents(calendar, availabilityPlan, numericSeats)}
+                focused={focused}
+                date={date}
+                onDateChange={this.onDateChange}
+                onFocusChange={this.onFocusChange}
+                onPrevMonthClick={() => this.onMonthClick(prevMonthFn)}
+                onNextMonthClick={() => this.onMonthClick(nextMonthFn)}
+                hideKeyboardShortcutsPanel
+                horizontalMonthPadding={9}
+                renderMonthElement={({ month }) => (
+                  <div className={css.monthElement}>
+                    <span className={css.monthString}>{month.format(monthFormat)}</span>
+                    {!isMonthDataFetched ? <IconSpinner rootClassName={css.monthInProgress} /> : null}
+                  </div>
+                )}
+              />
+            </div>
+            <ModalEditAvailabilitySeats
               date={date}
-              onDateChange={this.onDateChange}
-              onFocusChange={this.onFocusChange}
-              onPrevMonthClick={() => this.onMonthClick(prevMonthFn)}
-              onNextMonthClick={() => this.onMonthClick(nextMonthFn)}
-              hideKeyboardShortcutsPanel
-              horizontalMonthPadding={9}
-              renderMonthElement={({ month }) => (
-                <div className={css.monthElement}>
-                  <span className={css.monthString}>{month.format(monthFormat)}</span>
-                  {!isMonthDataFetched ? <IconSpinner rootClassName={css.monthInProgress} /> : null}
-                </div>
-              )}
+              onChange={this.onSeatsChange}
+              isOpen={isOpen}
+              onClose={this.onCloseModal}
+              onSave={this.onSave}
+              seatsInit={seatsInit}
+              value={seatsValue}
             />
           </div>
         ) : null}
@@ -453,6 +533,9 @@ class ManageAvailabilityCalendar extends Component {
             <span className={css.legendText}>
               <FormattedMessage id="EditListingAvailabilityForm.bookedDay" />
             </span>
+          </div>
+          <div className={css.legendRow}>
+            <span>Day ( number number of booking) </span>
           </div>
         </div>
         {fetchExceptionsError && fetchBookingsError ? (
@@ -485,7 +568,7 @@ ManageAvailabilityCalendar.defaultProps = {
   withPortal: false,
   initialVisibleMonth: null,
   numberOfMonths: 2,
-  onOutsideClick() {},
+  onOutsideClick() { },
   keepOpenOnDateSelect: false,
   renderCalendarInfo: null,
   isRTL: false,
@@ -493,8 +576,8 @@ ManageAvailabilityCalendar.defaultProps = {
   // navigation related props
   navPrev: null,
   navNext: null,
-  onPrevMonthClick() {},
-  onNextMonthClick() {},
+  onPrevMonthClick() { },
+  onNextMonthClick() { },
 
   // internationalization
   monthFormat: 'MMMM YYYY',

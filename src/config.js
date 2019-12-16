@@ -185,6 +185,9 @@ const timeRange = 30;//minute
 //discount of on monday
 const saleOfPrice = 25;
 
+//default seats
+const seatsDefault = 1;
+
 // NOTE: only expose configuration that should be visible in the
 // client side, don't add any server secrets in this file.
 const config = {
@@ -227,6 +230,7 @@ const config = {
   custom,
   timeRange,
   saleOfPrice,
+  seatsDefault
 };
 
 export default config;
