@@ -230,7 +230,6 @@ class ManageAvailabilityCalendar extends Component {
       date: null,
       seatsValue: 1,
       isOpen: false, //is modal open
-      numOfBooking: 0,
     };
 
     this.fetchMonthData = this.fetchMonthData.bind(this);
@@ -448,7 +447,7 @@ class ManageAvailabilityCalendar extends Component {
       ...rest
     } = this.props;
 
-    const { focused, date, currentMonth, isOpen, seatsValue, numOfBooking } = this.state;
+    const { focused, date, currentMonth, isOpen, seatsValue } = this.state;
     const { clientWidth: width } = this.dayPickerWrapper || { clientWidth: 0 };
     const hasWindow = typeof window !== 'undefined';
     const windowWidth = hasWindow ? window.innerWidth : 0;
@@ -517,7 +516,6 @@ class ManageAvailabilityCalendar extends Component {
               onSave={this.onSave}
               seatsInit={seatsInit}
               value={seatsValue}
-              numOfBooking={numOfBooking}
             />
           </div>
         ) : null}

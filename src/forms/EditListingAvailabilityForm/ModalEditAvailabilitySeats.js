@@ -13,16 +13,14 @@ const ModalEditAvailabilitySeats = (props) => {
         onChange,
         seatsInit,
         value,
-        numOfBooking,
     } = props;
 
     if(!isOpen) {
         return null;
     }
 
-    const availabilitySeats = parseInt(seatsInit) - numOfBooking;
     const message = value === "" ? <FormattedMessage id="ManageAvailabilityCalendar.seatsIsNotEmpty"/>
-                    : parseInt(value) > availabilitySeats ? <FormattedMessage id="ManageAvailabilityCalendar.seatsIsNotMoreThan" values={{ value: availabilitySeats }} />
+                    : parseInt(value) > seatsInit ? <FormattedMessage id="ManageAvailabilityCalendar.seatsIsNotMoreThan" values={{ value: seatsInit }} />
                     : parseInt(value) < 0 ? <FormattedMessage id="ManageAvailabilityCalendar.seatsIsNotLessThanZero" />
                     : null;
 
@@ -30,7 +28,7 @@ const ModalEditAvailabilitySeats = (props) => {
         <div className={css.modal}>
             <div className={css.modalContent}>
                 <label>Set availability seats for {moment(date).format("DD/MM/YYYY")}</label>
-                <input onChange={(e) => onChange(e.target.value)} type="number" min={0} max={availabilitySeats} value={value} placeholder="0"/>
+                <input onChange={(e) => onChange(e.target.value)} type="number" min={0} max={seatsInit} value={value} placeholder="0"/>
                 <span className={css.warning}>{message}</span>
                 <div className={css.buttonWrapper}>
                     <button onClick={onSave} type="button">Save</button>
