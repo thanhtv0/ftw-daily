@@ -1,6 +1,7 @@
 import React from "react";
 import moment from "moment";
 import css from "./ManageAvailabilityCalendar.css";
+import { FormattedMessage } from "../../util/reactIntl"
 
 const ModalEditAvailabilitySeats = (props) => {
 
@@ -11,20 +12,25 @@ const ModalEditAvailabilitySeats = (props) => {
         onSave,
         onChange,
         seatsInit,
-        value
+        value,
+        numOfBooking,
     } = props;
 
     if(!isOpen) {
         return null;
     }
 
-    const message = value === "" ? "Seats is not empty" : parseInt(value) > seatsInit ? `Seats is not more than ${seatsInit}` :null; 
+    const availabilitySeats = parseInt(seatsInit) - numOfBooking;
+    const message = value === "" ? <FormattedMessage id="ManageAvailabilityCalendar.seatsIsNotEmpty"/>
+                    : parseInt(value) > availabilitySeats ? <FormattedMessage id="ManageAvailabilityCalendar.seatsIsNotMoreThan" values={{ value: availabilitySeats }} />
+                    : parseInt(value) < 0 ? <FormattedMessage id="ManageAvailabilityCalendar.seatsIsNotLessThanZero" />
+                    : null;
 
     return (
         <div className={css.modal}>
             <div className={css.modalContent}>
                 <label>Set availability seats for {moment(date).format("DD/MM/YYYY")}</label>
-                <input onChange={(e) => onChange(e.target.value)} type="number" min={0} max={seatsInit} value={value} placeholder="0"/>
+                <input onChange={(e) => onChange(e.target.value)} type="number" min={0} max={availabilitySeats} value={value} placeholder="0"/>
                 <span className={css.warning}>{message}</span>
                 <div className={css.buttonWrapper}>
                     <button onClick={onSave} type="button">Save</button>

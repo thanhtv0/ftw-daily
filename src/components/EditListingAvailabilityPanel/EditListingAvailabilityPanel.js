@@ -70,6 +70,7 @@ const EditListingAvailabilityPanel = props => {
           // Exceptions are handled with live edit through a calendar,
           // which is visible on this panel.
           const {availabilityPlan, seats} = values;
+          // eslint-disable-next-line no-unused-vars
           for(let ele of availabilityPlan.entries) {
             ele.seats = parseInt(seats);
           }

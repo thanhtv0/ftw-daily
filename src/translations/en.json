@@ -138,7 +138,7 @@
   "EditListingAvailabilityForm.fetchMonthDataFailed": "Oops, couldn't load data for {month}, please try again.",
   "EditListingAvailabilityForm.availableDay": "Available",
   "EditListingAvailabilityForm.blockedDay": "Not available",
-  "EditListingAvailabilityForm.bookedDay": "Booked",
+  "EditListingAvailabilityForm.bookedDay": "All Booked",
   "EditListingAvailabilityForm.updateFailed": "Failed to update listing. Please try again.",
   "EditListingAvailabilityPanel.title": "Edit the availability of {listingTitle}",
   "EditListingAvailabilityPanel.createListingTitle": "When is it available?",
@@ -982,5 +982,8 @@
   "LineItemSaleOf.saleOffTitle": "Sale off on Monday",
   "LineItemSaleOf.totalPriceAfterSale": "Total price after sale",
   "ActivityFeed.ownTransitionRequestAndAutoAccept": "You requested to book { listingTitle }. The booking is accepted auto.",
-  "ActivityFeed.transitionRequestAndAutoAccept": "{ displayName } requested to book { listingTitle }. The booking is accepted auto."
+  "ActivityFeed.transitionRequestAndAutoAccept": "{ displayName } requested to book { listingTitle }. The booking is accepted auto.",
+  "ManageAvailabilityCalendar.seatsIsNotEmpty": "Seats is not empty",
+  "ManageAvailabilityCalendar.seatsIsNotMoreThan": "Seats is not more than {value}",
+  "ManageAvailabilityCalendar.seatsIsNotLessThanZero": "Seats is not less than 0"
 }

@@ -117,6 +117,7 @@ const isAfterEndOfBookingRange = date => !isInclusivelyBeforeDay(date, END_OF_BO
 
 const countBooking = (bookings, day) => {
   let countSeats = 0;
+  // eslint-disable-next-line no-unused-vars
   for (let b of bookings) {
     const booking = ensureBooking(b);
     const start = booking.attributes.start;
@@ -181,6 +182,9 @@ const renderDayContents = (calendar, availabilityPlan, seatsInit) => date => {
     seatsInit
   );
 
+  const exception = findException(exceptions, date);
+  const seatsFromException = exception ? ensureAvailabilityException(exception.availabilityException).attributes.seats : seatsInit;
+
   const dayClasses = classNames(css.default, {
     [css.outsideRange]: isOutsideRange,
     [css.today]: isSameDay,
@@ -189,8 +193,8 @@ const renderDayContents = (calendar, availabilityPlan, seatsInit) => date => {
     [css.exceptionError]: isFailed,
   });
 
-  const numOfBookingElement = isBooked ? null : numOfBooking !== 0 ? <span>{` (${numOfBooking})`}</span> : null;
-
+  const numOfBookingElement = isBooked ? null : <span>{` (${numOfBooking}, ${seatsFromException})`}</span>;
+ 
   return (
     <div className={css.dayWrapper}>
       <span className={dayClasses}>
@@ -226,6 +230,7 @@ class ManageAvailabilityCalendar extends Component {
       date: null,
       seatsValue: 1,
       isOpen: false, //is modal open
+      numOfBooking: 0,
     };
 
     this.fetchMonthData = this.fetchMonthData.bind(this);
@@ -345,7 +350,7 @@ class ManageAvailabilityCalendar extends Component {
       this.onDayAvailabilityChange(date, seatsInit, exceptions);
     }
 
-    const { isBooked } = dateModifiers(
+    const { isBooked, numOfBooking } = dateModifiers(
       availabilityPlan,
       exceptions,
       bookings,
@@ -354,7 +359,7 @@ class ManageAvailabilityCalendar extends Component {
     );
 
     if (!isBooked) {
-      this.setState({ isOpen: true, seatsValue: seats })
+      this.setState({ isOpen: true, seatsValue: seats, numOfBooking })
     }
   }
 
@@ -406,7 +411,7 @@ class ManageAvailabilityCalendar extends Component {
     const { seatsValue, date } = this.state;
     const { availabilityPlan, availability, seatsInit } = this.props;
 
-    if (seatsValue === "" || parseInt(seatsValue) > seatsInit)
+    if (seatsValue === "" || parseInt(seatsValue) > seatsInit || parseInt(seatsValue) < 0)
       return;
 
     const calendar = availability.calendar;
@@ -443,7 +448,7 @@ class ManageAvailabilityCalendar extends Component {
       ...rest
     } = this.props;
 
-    const { focused, date, currentMonth, isOpen, seatsValue } = this.state;
+    const { focused, date, currentMonth, isOpen, seatsValue, numOfBooking } = this.state;
     const { clientWidth: width } = this.dayPickerWrapper || { clientWidth: 0 };
     const hasWindow = typeof window !== 'undefined';
     const windowWidth = hasWindow ? window.innerWidth : 0;
@@ -512,6 +517,7 @@ class ManageAvailabilityCalendar extends Component {
               onSave={this.onSave}
               seatsInit={seatsInit}
               value={seatsValue}
+              numOfBooking={numOfBooking}
             />
           </div>
         ) : null}
@@ -535,7 +541,7 @@ class ManageAvailabilityCalendar extends Component {
             </span>
           </div>
           <div className={css.legendRow}>
-            <span>Day ( number number of booking) </span>
+            <span className={css.legendText}>Day (number of booking, seats exception) </span>
           </div>
         </div>
         {fetchExceptionsError && fetchBookingsError ? (
